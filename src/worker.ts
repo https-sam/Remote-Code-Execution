@@ -179,7 +179,7 @@ class JobWorker {
 							} else if (stderr) {
 								reject(stderr);
 							} else {
-								resolve(stdout);
+								resolve(stdout.trim());
 							}
 						});
 					} else {
