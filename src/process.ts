@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import {
 	ContainerInitialization,
+	JobStatus,
 	container,
 	fileFormat,
 } from "./types/process";
@@ -19,8 +20,8 @@ class Process {
 	 * Creates an appropriate docker container
 	 * to execute the target code
 	 */
-	async initContainer(container: container): Promise<ContainerInitialization> {
-		return new Promise((reject, resolve) => {
+	createContainer(container: container): Promise<ContainerInitialization> {
+		return new Promise((resolve, reject) => {
 			const initCommand = `docker create ${container}`;
 
 			child.exec(initCommand, (error, containerID, stderr) => {
@@ -38,8 +39,8 @@ class Process {
 	/**
 	 * writes a code into a temp file
 	 */
-	async prepTransfer(context: string, container: container): Promise<string> {
-		return new Promise((reject, resolve) => {
+	async writeFile(container: container, context: string): Promise<string> {
+		return new Promise((resolve, reject) => {
 			const fileName = crypto.randomBytes(32).toString("hex");
 			const filePath = path.join(
 				__dirname,
@@ -62,18 +63,63 @@ class Process {
 	 * copies the target code into the newly created
 	 * isolated container
 	 */
-	async copyContext(containerID: string): Promise<void> {
-		return new Promise(async (reject, resolve) => {
-			// const initCommand = `docker cp ${} ${containerID}/src`;
-			// child.exec(initCommand, (error, containerID, stderr) => {
-			// 	if (error) {
-			// 		reject(error.message);
-			// 	} else if (stderr) {
-			// 		reject(stderr);
-			// 	} else {
-			// 		resolve(containerID);
-			// 	}
-			// });
+	copyContext(
+		containerID: string,
+		container: container,
+		context: string
+	): Promise<string> {
+		return new Promise(async (resolve, reject) => {
+			this.writeFile(container, context)
+				.then((filePath) => {
+					const initCommand = `docker cp ${filePath} ${containerID}:/src`;
+					console.log(filePath);
+					child.exec(initCommand, (error, containerID, stderr) => {
+						if (error) {
+							reject(error.message);
+						} else if (stderr) {
+							reject(stderr);
+						} else {
+							resolve(containerID.trim());
+						}
+					});
+				})
+				.catch((e) => {
+					reject(e);
+				});
+		});
+	}
+
+	/**
+	 *  Excecutes phase1
+	 *  1] Creates a new container
+	 *  2] Copes the code into the contaienr
+	 */
+	initContainer(container: container, context: string): Promise<JobStatus> {
+		return new Promise(async (resolve, reject) => {
+			this.createContainer(container)
+				.then(async (containerID) => {
+					return this.copyContext(containerID, container, context)
+						.then(() => {
+							resolve({
+								message: `Job has succedded.`,
+								jobFailed: false,
+								retryable: true,
+								context: context,
+								containerID: containerID,
+							});
+						})
+						.catch((e) => {
+							throw new Error(e);
+						});
+				})
+				.catch((e) => {
+					reject({
+						message: `Job has failed for the following reason(s): ${e}.`,
+						jobFailed: true,
+						retryable: true,
+						context: context,
+					});
+				});
 		});
 	}
 }
