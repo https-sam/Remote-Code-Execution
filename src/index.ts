@@ -1,7 +1,7 @@
-import Process from "./process";
+import JobWorker from "./workder";
 
-const process = new Process();
-process
-	.initContainer("python3", "print('Hi')")
-	.then(() => console.log("OK"))
+const workder = new JobWorker();
+workder
+	.startContainer("python3", "print(10+898786)")
+	.then((output) => console.log(output))
 	.catch((e) => console.log(e));

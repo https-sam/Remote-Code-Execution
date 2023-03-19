@@ -5,11 +5,12 @@ import path from "path";
 import {
 	ContainerInitialization,
 	JobStatus,
+	WriteFileStatus,
 	container,
 	fileFormat,
-} from "./types/process";
+} from "./types/workder";
 
-class Process {
+class JobWorker {
 	constructor() {}
 
 	private _fileFormats: Record<container, fileFormat> = {
@@ -30,7 +31,7 @@ class Process {
 				} else if (stderr) {
 					reject(stderr);
 				} else {
-					resolve(containerID);
+					resolve(containerID.trim());
 				}
 			});
 		});
@@ -39,21 +40,26 @@ class Process {
 	/**
 	 * writes a code into a temp file
 	 */
-	async writeFile(container: container, context: string): Promise<string> {
+
+	async writeFile(
+		container: container,
+		context: string
+	): Promise<WriteFileStatus> {
 		return new Promise((resolve, reject) => {
 			const fileName = crypto.randomBytes(32).toString("hex");
+			const fileFormat = this._fileFormats[container];
 			const filePath = path.join(
 				__dirname,
 				"..",
 				"temp",
-				`${fileName}.${this._fileFormats[container]}`
+				`${fileName}.${fileFormat}`
 			);
 
 			fs.writeFile(filePath, context, (error) => {
 				if (error) {
 					reject(error.message);
 				} else {
-					resolve(filePath);
+					resolve({ filePath, fileFormat });
 				}
 			});
 		});
@@ -70,9 +76,8 @@ class Process {
 	): Promise<string> {
 		return new Promise(async (resolve, reject) => {
 			this.writeFile(container, context)
-				.then((filePath) => {
-					const initCommand = `docker cp ${filePath} ${containerID}:/src`;
-					console.log(filePath);
+				.then(({ filePath, fileFormat }) => {
+					const initCommand = `docker cp ${filePath} ${containerID}:/src/target.${fileFormat}`;
 					child.exec(initCommand, (error, containerID, stderr) => {
 						if (error) {
 							reject(error.message);
@@ -90,9 +95,9 @@ class Process {
 	}
 
 	/**
-	 *  Excecutes phase1
+	 *  Excecutes phase 1
 	 *  1] Creates a new container
-	 *  2] Copes the code into the contaienr
+	 *  2] Copies the code into the contaienr
 	 */
 	initContainer(container: container, context: string): Promise<JobStatus> {
 		return new Promise(async (resolve, reject) => {
@@ -122,6 +127,35 @@ class Process {
 				});
 		});
 	}
+
+	/**
+	 * Executes phase 2
+	 * 1] Spin up the container
+	 * 2] Record the output from the container
+	 */
+	startContainer(container: container, context: string): Promise<string> {
+		return new Promise((resolve, reject) => {
+			this.initContainer(container, context)
+				.then((jobStatus: JobStatus) => {
+					if (!jobStatus.jobFailed && jobStatus.containerID) {
+						const startContainer = `docker start -a ${jobStatus.containerID}`;
+						child.exec(startContainer, (error, stdout, stderr) => {
+							if (error) {
+								reject(error.message);
+							} else if (stderr) {
+								reject(stderr);
+							} else {
+								resolve(stdout);
+							}
+						});
+					} else {
+						// job failed
+						reject();
+					}
+				})
+				.catch((e) => console.log(e));
+		});
+	}
 }
 
-export default Process;
+export default JobWorker;
