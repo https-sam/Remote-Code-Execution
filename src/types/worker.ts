@@ -1,6 +1,22 @@
 export type container = "python3" | "javascript";
 export type fileFormat = "py" | "js";
-export type ContainerInitialization = string;
+
+export interface ContainerInitialization {
+	/**
+	 * Indicates whether it successfully created a contaienr
+	 */
+	error: boolean;
+
+	/**
+	 * The ID of the newly created container
+	 */
+	containerID: string;
+
+	/**
+	 * Error message in case of an error
+	 */
+	errorMessage?: string;
+}
 
 export interface WriteFileStatus {
 	/**

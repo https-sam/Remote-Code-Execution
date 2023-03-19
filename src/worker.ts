@@ -8,7 +8,7 @@ import {
 	WriteFileStatus,
 	container,
 	fileFormat,
-} from "./types/workder";
+} from "./types/worker";
 
 class JobWorker {
 	constructor() {}
@@ -27,11 +27,20 @@ class JobWorker {
 
 			child.exec(initCommand, (error, containerID, stderr) => {
 				if (error) {
-					reject(error.message);
+					reject({
+						error: true,
+						errorMessage: error.message,
+					});
 				} else if (stderr) {
-					reject(stderr);
+					reject({
+						error: true,
+						errorMessage: stderr,
+					});
 				} else {
-					resolve(containerID.trim());
+					resolve({
+						error: false,
+						containerID: containerID.trim(),
+					});
 				}
 			});
 		});
@@ -41,7 +50,7 @@ class JobWorker {
 	 * writes a code into a temp file
 	 */
 
-	async writeFile(
+	private async writeFile(
 		container: container,
 		context: string
 	): Promise<WriteFileStatus> {
@@ -60,6 +69,24 @@ class JobWorker {
 					reject(error.message);
 				} else {
 					resolve({ filePath, fileFormat });
+				}
+			});
+		});
+	}
+
+	/**
+	 * Removes a container with the provided containerID
+	 */
+	removeContainer(containerID: string): Promise<string> {
+		return new Promise((resolve, reject) => {
+			const removeContainer = `docker rm --force ${containerID}`;
+			child.exec(removeContainer, (error, stdout, stderr) => {
+				if (error) {
+					reject(error.message);
+				} else if (stderr) {
+					reject(stderr);
+				} else {
+					resolve(stdout);
 				}
 			});
 		});
@@ -102,7 +129,8 @@ class JobWorker {
 	initContainer(container: container, context: string): Promise<JobStatus> {
 		return new Promise(async (resolve, reject) => {
 			this.createContainer(container)
-				.then(async (containerID) => {
+				.then(async ({ containerID, error, errorMessage }) => {
+					if (error) return new Error(errorMessage);
 					return this.copyContext(containerID, container, context)
 						.then(() => {
 							resolve({
