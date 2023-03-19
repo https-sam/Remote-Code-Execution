@@ -1,16 +1,26 @@
 import { ContainerInitialization } from "../src/types/worker";
 import JobWorker from "../src/worker";
 
-describe("Docker Initialization test", () => {
+describe("Docker initialization test", () => {
 	const worker = new JobWorker();
 
 	it("should create a python container", async () => {
-		const jobStatus: ContainerInitialization = await worker.createContainer(
-			"python3"
-		);
+		worker.createContainer("python3").then(({ error, containerID }) => {
+			expect(error).toBe(false);
+			expect(containerID).toBeTruthy;
+			worker.removeContainer(containerID);
+		});
+	});
 
-		expect(jobStatus.error).toBe(false);
-		expect(jobStatus.containerID).toBeTruthy;
-		worker.removeContainer(jobStatus.containerID);
+	it("should not create a container", async () => {
+		worker
+			.createContainer("invalidName" as any)
+			.catch(
+				({ error, containerID, errorMessage }: ContainerInitialization) => {
+					expect(error).toBe(true);
+					expect(containerID).toBeFalsy;
+					expect(errorMessage).toBeTruthy;
+				}
+			);
 	});
 });
