@@ -1,5 +1,17 @@
-export type container = "python3" | "javascript";
+export type language = "python3" | "javascript";
 export type fileFormat = "py" | "js";
+
+export interface CodeContext {
+	/**
+	 * raw string code to be excuted
+	 */
+	code: string
+
+	/**
+	 * A method name in class to be executed
+	 */
+	functionName: string
+}
 
 export interface ContainerInitialization {
 	/**
@@ -49,7 +61,7 @@ export interface JobStatus {
 	/**
 	 * the raw data of the target code
 	 */
-	context: string;
+	context: CodeContext;
 
 	/**
 	 * Newly created ontainer ID if exists

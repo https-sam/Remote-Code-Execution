@@ -1,3 +1,7 @@
 from collections import Counter
-str = "asldkasweew"
-print(Counter(str))
+
+class Execute:
+  def calculate(self):
+    str = "asldkasweew"
+    print(Counter(str))
+
