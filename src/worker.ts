@@ -8,7 +8,7 @@ import {
 	WriteFileStatus,
 	container,
 	fileFormat,
-} from "./types/workder";
+} from "./types/worker";
 
 class JobWorker {
 	constructor() {}

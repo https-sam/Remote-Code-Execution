@@ -1,7 +1,7 @@
-import JobWorker from "./workder";
+import JobWorker from "./worker";
 
-const workder = new JobWorker();
-workder
+const worker = new JobWorker();
+worker
 	.startContainer("python3", "print(10+898786)")
 	.then((output) => console.log(output))
 	.catch((e) => console.log(e));
