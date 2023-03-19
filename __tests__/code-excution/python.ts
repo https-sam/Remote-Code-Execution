@@ -7,11 +7,11 @@ describe("Python transform into executable", () => {
   const worker = new JobWorker();
    it('should instantiate an object and execute the function', () => {
     const functionName = "solution"
-    const code = worker.transformCodeIntoExecutable("python3", {
+    const codeContext = worker.transformCodeIntoExecutable("python3", {
       code: "",
       functionName: functionName
     })
-    expect(code).toBe(`\nprint(${mainClassName}().${functionName}())`)
+    expect(codeContext).toBe(`\nprint(${mainClassName}().${functionName}())`)
    })
 })
 

@@ -1,5 +1,4 @@
-import { mainClassName } from "../src/config";
-import { CodeContext, ContainerInitialization } from "../src/types/worker";
+import { ContainerInitialization } from "../src/types/worker";
 import JobWorker from "../src/worker";
 
 
