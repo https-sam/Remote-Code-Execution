@@ -24,6 +24,12 @@ class JobWorker {
 	createContainer(container: container): Promise<ContainerInitialization> {
 		return new Promise((resolve, reject) => {
 			const initCommand = `docker create ${container}`;
+			if (!(container in this._fileFormats)) {
+				return reject({
+					error: true,
+					errorMessage: "Invalid container name.",
+				});
+			}
 
 			child.exec(initCommand, (error, containerID, stderr) => {
 				if (error) {
