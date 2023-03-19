@@ -12,7 +12,7 @@ import {
 	ExecuteContainer,
 	Stdout,
 } from "./types/worker";
-import { mainClassName } from "./config";
+import { containerCPULimit, containerMemLimit, mainClassName } from "./config";
 
 class JobWorker {
 	constructor() {}
@@ -28,7 +28,7 @@ class JobWorker {
 	 */
 	createContainer(language: language): Promise<ContainerInitialization> {
 		return new Promise((resolve, reject) => {
-			const initCommand = `docker create ${language}`;
+			const initCommand = `docker create ${containerMemLimit} ${containerCPULimit} ${language}`;
 			if (!(language in this._fileFormats)) {
 				return reject({
 					error: true,
@@ -103,7 +103,7 @@ class JobWorker {
 	/**
 	 * Removes a container with the provided containerID
 	 */
-	removeContainer(containerID: string): Promise<Stdout> {
+	async removeContainer(containerID: string): Promise<Stdout> {
 		return new Promise((resolve, reject) => {
 			const removeContainer = `docker rm --force ${containerID}`;
 			child.exec(removeContainer, (error, stdout, stderr) => {
