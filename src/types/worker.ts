@@ -1,5 +1,6 @@
 export type language = "python3" | "javascript";
 export type fileFormat = "py" | "js";
+export type Stdout = string
 
 export interface CodeContext {
 	/**
@@ -13,21 +14,23 @@ export interface CodeContext {
 	functionName: string
 }
 
-export interface ContainerInitialization {
+interface BaseError {
 	/**
-	 * Indicates whether it successfully created a contaienr
+	 * Indicates an error during the process of spinning up the container
 	 */
-	error: boolean;
+	error: boolean
 
+	/**
+	 * An error message in case the job fails
+	 */
+	errorMessage?: string
+}
+
+export interface ContainerInitialization extends BaseError {
 	/**
 	 * The ID of the newly created container
 	 */
 	containerID: string;
-
-	/**
-	 * Error message in case of an error
-	 */
-	errorMessage?: string;
 }
 
 export interface WriteFileStatus {
@@ -42,16 +45,15 @@ export interface WriteFileStatus {
 	fileFormat: string;
 }
 
-export interface JobStatus {
+
+
+export interface JobStatus extends BaseError{
 	/**
 	 * A brief message that describes that job status
 	 */
 	message: string;
 
-	/**
-	 * Whether the job failed
-	 */
-	jobFailed: boolean;
+
 
 	/**
 	 * indicates if the job is retryable
@@ -72,4 +74,15 @@ export interface JobStatus {
 	 * Newly created temp file that contain the context if exists
 	 */
 	filePath?: string;
+}
+
+export interface ExecuteContainer extends BaseError{
+	/**
+	 * stdout from the container as a result of running the code
+	 */
+	codeOutput?: Stdout
+	/**
+	 * ID of the container
+	 */
+	containerID?: string
 }

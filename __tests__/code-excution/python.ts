@@ -1,6 +1,19 @@
-import { CodeContext } from "../../src/types/worker";
+import { mainClassName } from "../../src/config";
+import { CodeContext, ExecuteContainer } from "../../src/types/worker";
 import JobWorker from "../../src/worker";
 import fs from 'fs'
+
+describe("Python transform into executable", () => {
+  const worker = new JobWorker();
+   it('should instantiate an object and execute the function', () => {
+    const functionName = "solution"
+    const code = worker.transformCodeIntoExecutable("python3", {
+      code: "",
+      functionName: functionName
+    })
+    expect(code).toBe(`\nprint(${mainClassName}().${functionName}())`)
+   })
+})
 
 
 describe("Python code excution test", () => {
@@ -14,10 +27,11 @@ describe("Python code excution test", () => {
       }
       worker
       .startContainer("python3", codeContext)
-      .then((output) => {
-        expect(output).toBe("Counter({'a': 2, 's': 2, 'w': 2, 'e': 2, 'l': 1, 'd': 1, 'k': 1})")
+      .then((response: ExecuteContainer) => {
+        expect(response.codeOutput).toBe("Counter({'a': 2, 's': 2, 'w': 2, 'e': 2, 'l': 1, 'd': 1, 'k': 1})")
+        worker.removeContainer(response.containerID!);
       })
-      .catch((e) => console.log(e));
+      .catch(_ => {});
     });
   })
 })
