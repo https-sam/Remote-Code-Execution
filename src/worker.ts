@@ -3,17 +3,19 @@ import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import {
+	CodeContext,
 	ContainerInitialization,
 	JobStatus,
 	WriteFileStatus,
-	container,
+	language,
 	fileFormat,
 } from "./types/worker";
+import { mainClassName } from "./config";
 
 class JobWorker {
 	constructor() {}
 
-	private _fileFormats: Record<container, fileFormat> = {
+	private _fileFormats: Record<language, fileFormat> = {
 		python3: "py",
 		javascript: "js",
 	};
@@ -21,10 +23,10 @@ class JobWorker {
 	 * Creates an appropriate docker container
 	 * to execute the target code
 	 */
-	createContainer(container: container): Promise<ContainerInitialization> {
+	createContainer(language: language): Promise<ContainerInitialization> {
 		return new Promise((resolve, reject) => {
-			const initCommand = `docker create ${container}`;
-			if (!(container in this._fileFormats)) {
+			const initCommand = `docker create ${language}`;
+			if (!(language in this._fileFormats)) {
 				return reject({
 					error: true,
 					errorMessage: "Invalid container name.",
@@ -53,16 +55,27 @@ class JobWorker {
 	}
 
 	/**
+	 * Returns a piece of code that executes a function in a class
+	 * language specific, so defined using switch cases
+	 */
+	transformCodeIntoExecutable(language: language, context: CodeContext) {
+		switch(language) {
+			case "python3": {
+				return `\n${mainClassName}().${context.functionName}()`
+			}
+		}
+	}
+
+	/**
 	 * writes a code into a temp file
 	 */
-
 	private async writeFile(
-		container: container,
-		context: string
+		language: language,
+		context: CodeContext
 	): Promise<WriteFileStatus> {
 		return new Promise((resolve, reject) => {
 			const fileName = crypto.randomBytes(32).toString("hex");
-			const fileFormat = this._fileFormats[container];
+			const fileFormat = this._fileFormats[language];
 			const filePath = path.join(
 				__dirname,
 				"..",
@@ -70,7 +83,10 @@ class JobWorker {
 				`${fileName}.${fileFormat}`
 			);
 
-			fs.writeFile(filePath, context, (error) => {
+			// appending a line to execute a specific function
+			context.code += this.transformCodeIntoExecutable(language, context)
+
+			fs.writeFile(filePath, context.code, (error) => {
 				if (error) {
 					reject(error.message);
 				} else {
@@ -104,11 +120,11 @@ class JobWorker {
 	 */
 	copyContext(
 		containerID: string,
-		container: container,
-		context: string
+		language: language,
+		context: CodeContext
 	): Promise<string> {
 		return new Promise(async (resolve, reject) => {
-			this.writeFile(container, context)
+			this.writeFile(language, context)
 				.then(({ filePath, fileFormat }) => {
 					const initCommand = `docker cp ${filePath} ${containerID}:/src/target.${fileFormat}`;
 					child.exec(initCommand, (error, containerID, stderr) => {
@@ -132,12 +148,12 @@ class JobWorker {
 	 *  1] Creates a new container
 	 *  2] Copies the code into the contaienr
 	 */
-	initContainer(container: container, context: string): Promise<JobStatus> {
+	initContainer(language: language, context: CodeContext): Promise<JobStatus> {
 		return new Promise(async (resolve, reject) => {
-			this.createContainer(container)
+			this.createContainer(language)
 				.then(async ({ containerID, error, errorMessage }) => {
 					if (error) return new Error(errorMessage);
-					return this.copyContext(containerID, container, context)
+					return this.copyContext(containerID, language, context)
 						.then(() => {
 							resolve({
 								message: `Job has succedded.`,
@@ -167,9 +183,9 @@ class JobWorker {
 	 * 1] Spin up the container
 	 * 2] Record the output from the container
 	 */
-	startContainer(container: container, context: string): Promise<string> {
+	startContainer(language: language, context: CodeContext): Promise<string> {
 		return new Promise((resolve, reject) => {
-			this.initContainer(container, context)
+			this.initContainer(language, context)
 				.then((jobStatus: JobStatus) => {
 					if (!jobStatus.jobFailed && jobStatus.containerID) {
 						const startContainer = `docker start -a ${jobStatus.containerID}`;

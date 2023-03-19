@@ -2,7 +2,8 @@
 	"scripts": {
 		"start:dev": "npx nodemon",
 		"build": "rimraf ./build && tsc",
-		"test": "jest"
+		"test": "jest",
+    "ct": "rm ./temp/*"
 	},
 	"devDependencies": {
 		"@types/jest": "^29.5.0",
