@@ -4,8 +4,13 @@
     "build": "rimraf ./build && tsc"
   },
   "devDependencies": {
+    "@types/watch": "^1.0.3",
     "nodemon": "^2.0.21",
     "rimraf": "^4.4.0",
     "typescript": "^5.0.2"
+  },
+  "dependencies": {
+    "child_process": "^1.0.2",
+    "crypto": "^1.0.1"
   }
 }
