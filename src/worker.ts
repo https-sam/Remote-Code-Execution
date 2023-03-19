@@ -9,6 +9,8 @@ import {
 	WriteFileStatus,
 	language,
 	fileFormat,
+	ExecuteContainer,
+	Stdout,
 } from "./types/worker";
 import { mainClassName } from "./config";
 
@@ -19,6 +21,7 @@ class JobWorker {
 		python3: "py",
 		javascript: "js",
 	};
+
 	/**
 	 * Creates an appropriate docker container
 	 * to execute the target code
@@ -55,14 +58,15 @@ class JobWorker {
 	}
 
 	/**
-	 * Returns a piece of code that executes a function in a class
-	 * language specific, so defined using switch cases
+	 * Returns a piece of code that executes the class method
+	 * this is language specific, so defined using switch cases
 	 */
-	transformCodeIntoExecutable(language: language, context: CodeContext) {
+	transformCodeIntoExecutable(language: language, context: CodeContext): string {
 		switch(language) {
 			case "python3": {
-				return `\n${mainClassName}().${context.functionName}()`
+				return `\nprint(${mainClassName}().${context.functionName}())`
 			}
+			default: return ""
 		}
 	}
 
@@ -99,7 +103,7 @@ class JobWorker {
 	/**
 	 * Removes a container with the provided containerID
 	 */
-	removeContainer(containerID: string): Promise<string> {
+	removeContainer(containerID: string): Promise<Stdout> {
 		return new Promise((resolve, reject) => {
 			const removeContainer = `docker rm --force ${containerID}`;
 			child.exec(removeContainer, (error, stdout, stderr) => {
@@ -157,7 +161,7 @@ class JobWorker {
 						.then(() => {
 							resolve({
 								message: `Job has succedded.`,
-								jobFailed: false,
+								error: false,
 								retryable: true,
 								context: context,
 								containerID: containerID,
@@ -183,24 +187,37 @@ class JobWorker {
 	 * 1] Spin up the container
 	 * 2] Record the output from the container
 	 */
-	startContainer(language: language, context: CodeContext): Promise<string> {
+	startContainer(language: language, context: CodeContext): Promise<ExecuteContainer> {
 		return new Promise((resolve, reject) => {
 			this.initContainer(language, context)
 				.then((jobStatus: JobStatus) => {
-					if (!jobStatus.jobFailed && jobStatus.containerID) {
+					if (!jobStatus.error && jobStatus.containerID) {
 						const startContainer = `docker start -a ${jobStatus.containerID}`;
 						child.exec(startContainer, (error, stdout, stderr) => {
 							if (error) {
-								reject(error.message);
+								reject({
+									error: true,
+									errorMessage: error.message
+								} as ExecuteContainer); 
 							} else if (stderr) {
-								reject(stderr);
+								reject({
+									error: true,
+									errorMessage: stderr
+								} as ExecuteContainer);
 							} else {
-								resolve(stdout.trim());
+								resolve({
+									error: false,
+									codeOutput: stdout.trim(),
+									containerID: jobStatus.containerID
+								} as ExecuteContainer);
 							}
 						});
 					} else {
 						// job failed
-						reject();
+						reject({
+							error: true,
+							errorMessage: `Job has failed in the process of initializing the container for the following reason(s): ${jobStatus.message}`
+						} as ExecuteContainer); 
 					}
 				})
 				.catch((e) => console.log(e));
