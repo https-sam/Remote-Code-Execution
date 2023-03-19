@@ -2,7 +2,7 @@
 A server that safely executes code sent by the user. 
 
 # Security Concerns
-Becasue it executes ANY code sent by the user, it must ensure that it won't affect the system or the other processes that are running other user's code.  
+Since it executes ANY code sent by the user, it must ensure that it won't affect the system or the other processes that are running other user's code.  
 Possible edge cases
 - Executing malicious code 
 - Infinite loops
