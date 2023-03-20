@@ -4,20 +4,16 @@ import JobWorker from "../../src/worker";
 import fs from 'fs'
 
 describe("Python transform into executable", () => {
-  const worker = new JobWorker();
+  const functionName = "solution"
+  const worker = new JobWorker("python3", {code: "", functionName: functionName});
    it('should instantiate an object and execute the function', () => {
-    const functionName = "solution"
-    const codeContext = worker.transformCodeIntoExecutable("python3", {
-      code: "",
-      functionName: functionName
-    })
+    const codeContext = worker.transformCodeIntoExecutable()
     expect(codeContext).toBe(`\nprint(${mainClassName}().${functionName}())`)
    })
 })
 
 
 describe("Python code excution test", () => {
-  const worker = new JobWorker();
   
   it('should calculate a frequency in string', () => {
     fs.readFile(`${__dirname}/../test-code/python/counter.py`, 'utf8', (_, code) => {
@@ -25,11 +21,12 @@ describe("Python code excution test", () => {
         code: code,
         functionName: "calculate"
       }
+      const worker = new JobWorker("python3", codeContext);
       worker
-      .startContainer("python3", codeContext)
+      .startContainer()
       .then((response: ExecuteContainer) => {
         expect(response.codeOutput).toBe("Counter({'a': 2, 's': 2, 'w': 2, 'e': 2, 'l': 1, 'd': 1, 'k': 1})")
-        worker.removeContainer(response.containerID!);
+        worker.cleanupJob();
       })
       .catch(_ => {});
     });
