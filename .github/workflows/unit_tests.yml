@@ -7,15 +7,15 @@ on:
 
 jobs:
   test:
-    name: Run Unit tests
+    name: Run unit tests
     runs-on: ubuntu-latest
    
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Build Docker image 
+    - name: Build Custom Docker image
       run: docker build -t test_env .
        
-    - name: Run tests inside the container
+    - name: Run unit tests inside the custom docker container
       run: docker run test_env
