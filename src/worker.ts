@@ -173,7 +173,7 @@ class JobWorker {
 				})
 				.catch((e) => {
 					reject({
-						message: `Job has failed for the following reason(s): ${e.message}.`,
+						message: `Job has failed for the following reason(s): ${e}.`,
 						jobFailed: true,
 						retryable: true,
 						context: context,
@@ -220,7 +220,7 @@ class JobWorker {
 						} as ExecuteContainer); 
 					}
 				})
-				.catch((e) => console.log(e));
+				.catch(_ => {});
 		});
 	}
 }
