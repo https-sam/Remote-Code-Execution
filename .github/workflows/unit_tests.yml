@@ -17,6 +17,5 @@ jobs:
     - name: Build Docker image 
       run: docker build -t test_env .
        
-     - name: Run tests inside the container
+    - name: Run tests inside the container
       run: docker run test_env
-      
