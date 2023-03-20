@@ -1,6 +1,20 @@
-# action.yml
-name: 'Unit tests'
-description: 'Runs unit tests'
-runs:
-  using: 'docker'
-  image: 'Dockerfile'
+name: UnitTests
+on:
+  pull_request:
+  push: { branches: master }
+
+jobs:
+  test:
+    name: Run Unit tests
+    runs-on: ubuntu-latest
+   
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Build Docker image 
+       run: docker build -t test_env .
+       
+     - name: Run tests inside the container
+       run: docker run test_env
