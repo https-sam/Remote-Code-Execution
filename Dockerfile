@@ -8,4 +8,4 @@ RUN apk update && apk add --no-cache docker-cli
 
 RUN npm install && npm i jest -g
 
-ENTRYPOINT [ "/run_tests.sh" ]
+ENTRYPOINT [ "./run_tests.sh" ]
