@@ -14,22 +14,35 @@ import {
 } from "./types/worker";
 import { containerCPULimit, containerMemLimit, mainClassName } from "./config";
 
-class JobWorker {
-	constructor() {}
 
-	private _fileFormats: Record<language, fileFormat> = {
-		python3: "py",
-		javascript: "js",
-	};
+const fileFormats: Record<language, fileFormat> = {
+	python3: "py",
+	javascript: "js",
+};
+
+class JobWorker {
+	public language: language
+	public codeContext: CodeContext
+	public filename: string
+
+	constructor(language: language, codeContext: CodeContext) {
+		this.language = language
+		this.codeContext = codeContext
+		this.filename = ""
+	}
+
+	containerID: string = ""
+	cacheFilename: string = ""
+
 
 	/**
 	 * Creates an appropriate docker container
 	 * to execute the target code
 	 */
-	createContainer(language: language): Promise<ContainerInitialization> {
+	createContainer(): Promise<ContainerInitialization> {
 		return new Promise((resolve, reject) => {
-			const initCommand = `docker create ${containerMemLimit} ${containerCPULimit} ${language}`;
-			if (!(language in this._fileFormats)) {
+			const initCommand = `docker create ${containerMemLimit} ${containerCPULimit} ${this.language}`;
+			if (!(this.language in fileFormats)) {
 				return reject({
 					error: true,
 					errorMessage: "Invalid container name.",
@@ -48,6 +61,7 @@ class JobWorker {
 						errorMessage: stderr,
 					});
 				} else {
+					this.containerID = containerID.trim()
 					resolve({
 						error: false,
 						containerID: containerID.trim(),
@@ -61,10 +75,10 @@ class JobWorker {
 	 * Returns a piece of code that executes the class method
 	 * this is language specific, so defined using switch cases
 	 */
-	transformCodeIntoExecutable(language: language, context: CodeContext): string {
-		switch(language) {
+	transformCodeIntoExecutable(): string {
+		switch(this.language) {
 			case "python3": {
-				return `\nprint(${mainClassName}().${context.functionName}())`
+				return `\nprint(${mainClassName}().${this.codeContext.functionName}())`
 			}
 			default: return ""
 		}
@@ -73,24 +87,21 @@ class JobWorker {
 	/**
 	 * writes a code into a temp file
 	 */
-	private async writeFile(
-		language: language,
-		context: CodeContext
-	): Promise<WriteFileStatus> {
+	private async writeFile(): Promise<WriteFileStatus> {
 		return new Promise((resolve, reject) => {
-			const fileName = crypto.randomBytes(32).toString("hex");
-			const fileFormat = this._fileFormats[language];
+			const fileFormat: string = fileFormats[this.language];
+			this.filename = `${crypto.randomBytes(32).toString("hex")}.${fileFormat}`
 			const filePath = path.join(
 				__dirname,
 				"..",
 				"temp",
-				`${fileName}.${fileFormat}`
+				`${this.filename}`
 			);
 
 			// appending a line to execute a specific function
-			context.code += this.transformCodeIntoExecutable(language, context)
+			this.codeContext.code += this.transformCodeIntoExecutable()
 
-			fs.writeFile(filePath, context.code, (error) => {
+			fs.writeFile(filePath, this.codeContext.code, (error) => {
 				if (error) {
 					reject(error.message);
 				} else {
@@ -100,37 +111,19 @@ class JobWorker {
 		});
 	}
 
-	/**
-	 * Removes a container with the provided containerID
-	 */
-	async removeContainer(containerID: string): Promise<Stdout> {
-		return new Promise((resolve, reject) => {
-			const removeContainer = `docker rm --force ${containerID}`;
-			child.exec(removeContainer, (error, stdout, stderr) => {
-				if (error) {
-					reject(error.message);
-				} else if (stderr) {
-					reject(stderr);
-				} else {
-					resolve(stdout);
-				}
-			});
-		});
-	}
 
 	/**
 	 * copies the target code into the newly created
 	 * isolated container
 	 */
-	copyContext(
-		containerID: string,
-		language: language,
-		context: CodeContext
-	): Promise<string> {
+	copyContext(): Promise<string> {
 		return new Promise(async (resolve, reject) => {
-			this.writeFile(language, context)
+			if(!this.containerID) {
+				reject("ContainerID not found.");
+			}
+			this.writeFile()
 				.then(({ filePath, fileFormat }) => {
-					const initCommand = `docker cp ${filePath} ${containerID}:/src/target.${fileFormat}`;
+					const initCommand = `docker cp ${filePath} ${this.containerID}:/src/target.${fileFormat}`;
 					child.exec(initCommand, (error, containerID, stderr) => {
 						if (error) {
 							reject(error.message);
@@ -152,19 +145,17 @@ class JobWorker {
 	 *  1] Creates a new container
 	 *  2] Copies the code into the contaienr
 	 */
-	initContainer(language: language, context: CodeContext): Promise<JobStatus> {
+	initContainer(): Promise<JobStatus> {
 		return new Promise(async (resolve, reject) => {
-			this.createContainer(language)
-				.then(async ({ containerID, error, errorMessage }) => {
+			this.createContainer()
+				.then(async ({ error, errorMessage }) => {
 					if (error) return new Error(errorMessage);
-					return this.copyContext(containerID, language, context)
+					return this.copyContext()
 						.then(() => {
 							resolve({
 								message: `Job has succedded.`,
 								error: false,
 								retryable: true,
-								context: context,
-								containerID: containerID,
 							});
 						})
 						.catch((e) => {
@@ -176,7 +167,6 @@ class JobWorker {
 						message: `Job has failed for the following reason(s): ${e}.`,
 						jobFailed: true,
 						retryable: true,
-						context: context,
 					});
 				});
 		});
@@ -187,12 +177,12 @@ class JobWorker {
 	 * 1] Spin up the container
 	 * 2] Record the output from the container
 	 */
-	startContainer(language: language, context: CodeContext): Promise<ExecuteContainer> {
+	startContainer(): Promise<ExecuteContainer> {
 		return new Promise((resolve, reject) => {
-			this.initContainer(language, context)
+			this.initContainer()
 				.then((jobStatus: JobStatus) => {
-					if (!jobStatus.error && jobStatus.containerID) {
-						const startContainer = `docker start -a ${jobStatus.containerID}`;
+					if (!jobStatus.error && this.containerID) {
+						const startContainer = `docker start -a ${this.containerID}`;
 						child.exec(startContainer, (error, stdout, stderr) => {
 							if (error) {
 								reject({
@@ -208,7 +198,6 @@ class JobWorker {
 								resolve({
 									error: false,
 									codeOutput: stdout.trim(),
-									containerID: jobStatus.containerID
 								} as ExecuteContainer);
 							}
 						});
@@ -222,6 +211,62 @@ class JobWorker {
 				})
 				.catch(_ => {});
 		});
+	}
+
+
+
+	/**
+	 * Removes a container with the provided containerID
+	 */
+	async removeContainer(): Promise<Stdout> {
+		return new Promise((resolve, reject) => {
+			if(!this.containerID) {
+				reject("ContainerID not found.");
+			}
+			const removeContainer = `docker rm --force ${this.containerID}`;
+			child.exec(removeContainer, (error, stdout, stderr) => {
+				if (error) {
+					reject(error.message);
+				} else if (stderr) {
+					reject(stderr);
+				} else {
+					resolve(stdout);
+				}
+			});
+		});
+	}
+
+
+	/**
+	 * Deletes the temp file in /temp folder
+	 */
+	async removeCacheFile(): Promise<Stdout> {
+		return new Promise((resolve, reject) => {
+			if(!this.filename) {
+				return reject("Filename not found.");
+			}
+			const removeContainer = `rm  ${__dirname}/../temp/${this.filename}`;
+			child.exec(removeContainer, (error, stdout, stderr) => {
+				if (error) {
+					reject(error.message);
+				} else if (stderr) {
+					reject(stderr);
+				} else {
+					resolve(stdout);
+				}
+			});
+		});
+	}
+
+	/**
+	 * Cleans up the job
+	 * Destroys the docker container & deletes cache files
+	 */
+	async cleanupJob(): Promise<any> {
+		const jobs: Promise<any>[] = []
+		jobs.push(this.removeContainer())
+		jobs.push(this.removeCacheFile())
+		return Promise.all(jobs)
 	}
 }
 

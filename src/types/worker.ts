@@ -39,6 +39,7 @@ export interface WriteFileStatus {
 	 */
 	filePath: string;
 
+
 	/**
 	 * The file format of the created file
 	 */
@@ -53,22 +54,10 @@ export interface JobStatus extends BaseError{
 	 */
 	message: string;
 
-
-
 	/**
 	 * indicates if the job is retryable
 	 */
 	retryable: boolean;
-
-	/**
-	 * the raw data of the target code
-	 */
-	context: CodeContext;
-
-	/**
-	 * Newly created ontainer ID if exists
-	 */
-	containerID?: string;
 
 	/**
 	 * Newly created temp file that contain the context if exists
@@ -81,8 +70,5 @@ export interface ExecuteContainer extends BaseError{
 	 * stdout from the container as a result of running the code
 	 */
 	codeOutput?: Stdout
-	/**
-	 * ID of the container
-	 */
-	containerID?: string
+
 }
