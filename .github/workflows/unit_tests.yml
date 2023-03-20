@@ -17,7 +17,7 @@ jobs:
     - name: Build Python Custom Docker image
       run: docker build -t python3 -f ${{ github.workspace }}/dockerfiles/python3.Dockerfile .
     
-    -name: Install testing dependencies
+    - name: Install testing dependencies
       run: npm install jest -g
 
     - name: Run unit tests
