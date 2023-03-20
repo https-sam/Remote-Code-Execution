@@ -15,8 +15,11 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Build Custom Docker image
-      run: docker build -t test_env .
+      run: docker build -t python3 -f ${{ github.workspace }}/dockerfiles/python3.Dockerfile .
+
+    # - name: Build Custom Docker image
+    #   run: docker build -t test_env .
        
-    - name: Run unit tests inside the custom docker container
-      run: docker run -dit -v "/var/run/docker.sock:/var/run/docker.sock:rw" test_env
-      # run: docker run test_env
+    # - name: Run unit tests inside the custom docker container
+    #   run: docker run -dit -v "/var/run/docker.sock:/var/run/docker.sock:rw" test_env
+    #   # run: docker run test_env
