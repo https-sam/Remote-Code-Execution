@@ -1,7 +1,7 @@
 # Remote Code Execution Server
 A server that safely executes code sent by the user. 
 
-# Security Concerns
+# Sandboxed Environments
 Since it executes ANY code sent by the user, it must ensure that it won't affect the system or the other processes that are running other user's code.  
 Possible edge cases
 - Executing malicious code 
