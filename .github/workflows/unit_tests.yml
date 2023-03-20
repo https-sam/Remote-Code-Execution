@@ -23,7 +23,7 @@ jobs:
         npm install ts-jest -g
 
     - name: Run unit tests
-      run: jest
+      run: npm test
 
     # - name: Build Custom Docker image
     #   run: docker build -t test_env .
