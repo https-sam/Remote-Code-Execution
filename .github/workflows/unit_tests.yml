@@ -16,6 +16,9 @@ jobs:
 
     - name: Build Custom Docker image
       run: docker build -t test_env .
+    
+    - name: Connect docker demon
+      run: docker build -t python3 -f /src/dockerfiles/python3.Dockerfile .
        
     - name: Run unit tests inside the custom docker container
       run: docker run -dit -v "/var/run/docker.sock:/var/run/docker.sock:rw" test_env
