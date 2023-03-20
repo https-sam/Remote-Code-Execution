@@ -19,6 +19,7 @@ jobs:
     
     - name: Install testing dependencies
       run: |
+        npm install
         npm install jest -g
         npm install ts-jest -g
 
