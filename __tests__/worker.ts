@@ -14,6 +14,8 @@ describe("Docker initialization test", () => {
 			.catch((_) => {});
 	});
 
+	// TODO write a tast case for writeFile() & copyContext
+
 	it("should not create a container", async () => {
 		const worker = new JobWorker("invalidName" as any, {
 			code: "",
@@ -28,5 +30,30 @@ describe("Docker initialization test", () => {
 					expect(errorMessage).toBeTruthy();
 				}
 			);
+	});
+
+
+	it("should not initialize a container", async () => {
+		const worker = new JobWorker("invalidName" as any, { code: "print('Hello World!')", functionName: "" });
+		worker
+			.initContainer()
+			.then(({ error, message }) => {
+				expect(error).toBe(false);
+				expect(message).toBe("Job has succedded.");
+				worker.cleanupJob();
+			})
+			.catch((_) => {});
+	});
+
+	it("should initialize a python container with code in it", async () => {
+		const worker = new JobWorker("python3", { code: "print('Hello World!')", functionName: "" });
+		worker
+			.initContainer()
+			.then(({ error, message }) => {
+				expect(error).toBe(false);
+				expect(message).toBe("Job has succedded.");
+				worker.cleanupJob();
+			})
+			.catch((_) => {});
 	});
 });
