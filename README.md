@@ -9,4 +9,4 @@ Possible edge cases
 - Recursion without a base case
 - Memory / CPU intensive jobs
 
-To handle this, the server creates an isolated unique docker container for code sent by the user and executes the code inside the container, allowing to isolate any desaster and limit memory usage or CPU usage. 
+To handle this, the server creates an isolated unique docker container to executes the code inside the container, allowing to isolate any disaster and limit memory usage or CPU usage. 
