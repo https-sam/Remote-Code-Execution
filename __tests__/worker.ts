@@ -50,7 +50,8 @@ describe("Docker initialization test", () => {
     worker
       .initContainer()
       .then(({ error, message }) => {
-        expect(error).toBe(false);
+        expect(error).toBe(false)
+        expect(message).toBeTruthy;
         expect(message).toBe("Job has succedded.");
         worker.cleanupJob();
       })
