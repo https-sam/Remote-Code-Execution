@@ -13,22 +13,22 @@ describe("Python transform into executable", () => {
 })
 
 
-describe("Python code excution test", () => {
-  
-  it('should calculate a frequency in string', () => {
-    fs.readFile(`${__dirname}/../test-code/python/counter.py`, 'utf8', (_, code) => {
-      const codeContext: CodeContext = {
-        code: code,
-        functionName: "calculate"
-      }
-      const worker = new JobWorker("python3", codeContext);
-      worker
-      .startContainer()
-      .then((response: ExecuteContainer) => {
-        expect(response.codeOutput).toBe("Counter({'a': 2, 's': 2, 'w': 2, 'e': 2, 'l': 1, 'd': 1, 'k': 1})")
-        worker.cleanupJob();
-      })
-      .catch(_ => {});
-    });
-  })
-})
+// TODO needs some work, cannot seem to ready file here, and is being recognized as success
+
+// describe("Python code excution test", () => {
+//   it('should calculate a frequency in string', () => {
+//     expect.assertions(1);
+
+//     fs.readFile(`${__dirname}/../test-code/python/counter.py`, 'utf8', async (error, code) => {
+//       const codeContext: CodeContext = {
+//         code: code,
+//         functionName: "calculate"
+//       }
+//       const worker = new JobWorker("python3", codeContext);
+//       const response = await worker.startContainer()
+//       console.log(response)
+//       expect(response.codeOutput).toBe("Counter({'a': 2, 's': 2, 'w': 2, 'e': 2, 'l': 1, 'd': 1, 'k': 1})")
+//       await worker.cleanupJob();
+//     });
+//   })
+// })

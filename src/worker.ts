@@ -38,14 +38,14 @@ class JobWorker {
    */
   createContainer(): Promise<ContainerInitialization> {
     return new Promise((resolve, reject) => {
-      const initCommand = `docker create ${containerMemLimit} ${containerCPULimit} ${this.language}`;
       if (!(this.language in fileFormats)) {
-        return reject({
+        reject({
           error: true,
-          errorMessage: "Invalid container name.",
+          errorMessage: "Invalid language name.",
         });
       }
-
+      
+      const initCommand = `docker create ${containerMemLimit} ${containerCPULimit} ${this.language}`;
       child.exec(initCommand, (error, containerID, stderr) => {
         if (error) {
           reject({
@@ -140,24 +140,27 @@ class JobWorker {
   initContainer(): Promise<JobStatus> {
     return new Promise(async (resolve, reject) => {
       this.createContainer()
-        .then(async ({ error, errorMessage }) => {
-          if (error) return new Error(errorMessage);
-          return this.copyContext()
+      .then(() => {
+          this.copyContext()
             .then(() => {
               resolve({
-                message: `Job has succedded.`,
+                message: `Job has succeeded.`,
                 error: false,
                 retryable: true,
               });
             })
             .catch((e) => {
-              throw new Error(e);
+              reject({
+                message: e,
+                error: true,
+                retryable: true,
+              });
             });
         })
-        .catch((e) => {
+        .catch(({errorMessage}) => {
           reject({
-            message: `Job has failed for the following reason(s): ${e}.`,
-            jobFailed: true,
+            message: errorMessage,
+            error: true,
             retryable: true,
           });
         });
@@ -169,7 +172,7 @@ class JobWorker {
    * 1] Spin up the container
    * 2] Record the output from the container
    */
-  startContainer(): Promise<ExecuteContainer> {
+  async startContainer(): Promise<ExecuteContainer> {
     return new Promise((resolve, reject) => {
       this.initContainer()
         .then((jobStatus: JobStatus) => {
@@ -213,6 +216,7 @@ class JobWorker {
       if (!this.containerID) {
         reject("ContainerID not found.");
       }
+      
       const removeContainer = `docker rm --force ${this.containerID}`;
       child.exec(removeContainer, (error, stdout, stderr) => {
         if (error) {

@@ -1,60 +1,45 @@
-import { ContainerInitialization } from "../src/types/worker";
 import JobWorker from "../src/worker";
 
 describe("Docker initialization test", () => {
   it("should create a python container", async () => {
     const worker = new JobWorker("python3", { code: "", functionName: "" });
-    worker
-      .createContainer()
-      .then(({ error, containerID }) => {
-        expect(error).toBe(false);
-        expect(containerID).toBeTruthy;
-        worker.removeContainer();
-      })
-      .catch((_) => {});
+    const { error, containerID } = await worker.createContainer()
+    expect(error).toBe(false);
+    expect(containerID).toBeTruthy;
+    await worker.removeContainer();
   });
 
   // TODO write a tast case for writeFile() & copyContext
 
   it("should not create a container", async () => {
-    const worker = new JobWorker("invalidName" as any, {
-      code: "",
-      functionName: "",
-    });
-    worker
-      .createContainer()
-      .catch(
-        ({ error, containerID, errorMessage }: ContainerInitialization) => {
-          expect(error).toBe(true);
-          expect(containerID).toBeFalsy();
-          expect(errorMessage).toBeTruthy();
-        }
-      );
+    const worker = new JobWorker("invalidName" as any, { code: "", functionName: ""});
+    expect.assertions(3);
+    try {
+      await worker.createContainer()
+    } catch ({ error, containerID, errorMessage }: any) {
+      expect(error).toBe(true);
+      expect(containerID).toBeFalsy();
+      expect(errorMessage).toBe("Invalid language name.");
+    }
   });
 
 
   it("should not initialize a container", async () => {
     const worker = new JobWorker("invalidName" as any, { code: "print('Hello World!')", functionName: "" });
-    worker
-      .initContainer()
-      .then(({ error, message }) => {
-        expect(error).toBe(false);
-        expect(message).toBe("Job has succedded.");
-        worker.cleanupJob();
-      })
-      .catch((_) => {});
+    expect.assertions(2);
+    try {
+      await worker.initContainer()
+    } catch ({ error, message }: any) {
+      expect(error).toEqual(true)
+      expect(message).toEqual("Invalid language name.")
+    }
   });
 
   it("should initialize a python container with code in it", async () => {
     const worker = new JobWorker("python3", { code: "print('Hello World!')", functionName: "" });
-    worker
-      .initContainer()
-      .then(({ error, message }) => {
-        expect(error).toBe(false)
-        expect(message).toBeTruthy;
-        expect(message).toBe("Job has succedded.");
-        worker.cleanupJob();
-      })
-      .catch((_) => {});
+    const { error, message } = await worker.initContainer()
+    expect(error).toBe(false)
+    expect(message).toBe("Job has succeeded.");
+    worker.cleanupJob();
   });
 });
