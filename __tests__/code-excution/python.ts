@@ -1,7 +1,5 @@
 import { mainClassName } from "../../src/config";
-import { CodeContext, ExecuteContainer } from "../../src/types/worker";
 import JobWorker from "../../src/worker";
-import fs from 'fs'
 
 describe("Python transform into executable", () => {
   const functionName = "solution"
