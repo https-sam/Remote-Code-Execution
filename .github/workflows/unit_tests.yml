@@ -19,9 +19,7 @@ jobs:
     
     - name: Install testing dependencies
       run: |
-        npm install
-        npm install jest -g
-        npm install ts-jest -g
+        yarn install
 
     - name: Run unit tests
       run: npm test
