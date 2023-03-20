@@ -10,7 +10,7 @@ describe("Docker initialization test", () => {
 			expect(error).toBe(false);
 			expect(containerID).toBeTruthy;
 			worker.removeContainer(containerID);
-		});
+		}).catch(_ => {})
 	});
 
 	it("should not create a container", async () => {
