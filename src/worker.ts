@@ -14,26 +14,23 @@ import {
 } from "./types/worker";
 import { containerCPULimit, containerMemLimit, mainClassName } from "./config";
 
-
 const fileFormats: Record<language, fileFormat> = {
 	python3: "py",
 	javascript: "js",
 };
 
 class JobWorker {
-	public language: language
-	public codeContext: CodeContext
-	public filename: string
+	public language: language;
+	public codeContext: CodeContext;
+	public filename: string;
+	public containerID: string;
 
 	constructor(language: language, codeContext: CodeContext) {
-		this.language = language
-		this.codeContext = codeContext
-		this.filename = ""
+		this.language = language;
+		this.codeContext = codeContext;
+		this.filename = "";
+		this.containerID = "";
 	}
-
-	containerID: string = ""
-	cacheFilename: string = ""
-
 
 	/**
 	 * Creates an appropriate docker container
@@ -61,10 +58,10 @@ class JobWorker {
 						errorMessage: stderr,
 					});
 				} else {
-					this.containerID = containerID.trim()
+					this.containerID = containerID.trim();
 					resolve({
 						error: false,
-						containerID: containerID.trim(),
+						containerID: this.containerID,
 					});
 				}
 			});
@@ -76,11 +73,12 @@ class JobWorker {
 	 * this is language specific, so defined using switch cases
 	 */
 	transformCodeIntoExecutable(): string {
-		switch(this.language) {
+		switch (this.language) {
 			case "python3": {
-				return `\nprint(${mainClassName}().${this.codeContext.functionName}())`
+				return `\nprint(${mainClassName}().${this.codeContext.functionName}())`;
 			}
-			default: return ""
+			default:
+				return "";
 		}
 	}
 
@@ -90,16 +88,11 @@ class JobWorker {
 	private async writeFile(): Promise<WriteFileStatus> {
 		return new Promise((resolve, reject) => {
 			const fileFormat: string = fileFormats[this.language];
-			this.filename = `${crypto.randomBytes(32).toString("hex")}.${fileFormat}`
-			const filePath = path.join(
-				__dirname,
-				"..",
-				"temp",
-				`${this.filename}`
-			);
+			this.filename = `${crypto.randomBytes(32).toString("hex")}.${fileFormat}`;
+			const filePath = path.join(__dirname, "..", "temp", `${this.filename}`);
 
 			// appending a line to execute a specific function
-			this.codeContext.code += this.transformCodeIntoExecutable()
+			this.codeContext.code += this.transformCodeIntoExecutable();
 
 			fs.writeFile(filePath, this.codeContext.code, (error) => {
 				if (error) {
@@ -111,14 +104,13 @@ class JobWorker {
 		});
 	}
 
-
 	/**
 	 * copies the target code into the newly created
 	 * isolated container
 	 */
 	copyContext(): Promise<string> {
 		return new Promise(async (resolve, reject) => {
-			if(!this.containerID) {
+			if (!this.containerID) {
 				reject("ContainerID not found.");
 			}
 			this.writeFile()
@@ -187,12 +179,12 @@ class JobWorker {
 							if (error) {
 								reject({
 									error: true,
-									errorMessage: error.message
-								} as ExecuteContainer); 
+									errorMessage: error.message,
+								} as ExecuteContainer);
 							} else if (stderr) {
 								reject({
 									error: true,
-									errorMessage: stderr
+									errorMessage: stderr,
 								} as ExecuteContainer);
 							} else {
 								resolve({
@@ -205,22 +197,20 @@ class JobWorker {
 						// job failed
 						reject({
 							error: true,
-							errorMessage: `Job has failed in the process of initializing the container for the following reason(s): ${jobStatus.message}`
-						} as ExecuteContainer); 
+							errorMessage: `Job has failed in the process of initializing the container for the following reason(s): ${jobStatus.message}`,
+						} as ExecuteContainer);
 					}
 				})
-				.catch(_ => {});
+				.catch((_) => {});
 		});
 	}
-
-
 
 	/**
 	 * Removes a container with the provided containerID
 	 */
 	async removeContainer(): Promise<Stdout> {
 		return new Promise((resolve, reject) => {
-			if(!this.containerID) {
+			if (!this.containerID) {
 				reject("ContainerID not found.");
 			}
 			const removeContainer = `docker rm --force ${this.containerID}`;
@@ -236,13 +226,12 @@ class JobWorker {
 		});
 	}
 
-
 	/**
 	 * Deletes the temp file in /temp folder
 	 */
 	async removeCacheFile(): Promise<Stdout> {
 		return new Promise((resolve, reject) => {
-			if(!this.filename) {
+			if (!this.filename) {
 				return reject("Filename not found.");
 			}
 			const removeContainer = `rm  ${__dirname}/../temp/${this.filename}`;
@@ -263,10 +252,10 @@ class JobWorker {
 	 * Destroys the docker container & deletes cache files
 	 */
 	async cleanupJob(): Promise<any> {
-		const jobs: Promise<any>[] = []
-		jobs.push(this.removeContainer())
-		jobs.push(this.removeCacheFile())
-		return Promise.all(jobs)
+		const jobs: Promise<any>[] = [];
+		jobs.push(this.removeContainer());
+		jobs.push(this.removeCacheFile());
+		return Promise.all(jobs);
 	}
 }
 
