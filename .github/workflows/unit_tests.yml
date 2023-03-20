@@ -10,13 +10,12 @@ jobs:
     name: Run Unit tests
     runs-on: ubuntu-latest
    
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
 
     - name: Build Docker image 
-       run: docker build -t test_env .
+      run: docker build -t test_env .
        
      - name: Run tests inside the container
-       run: docker run test_env
+      run: docker run test_env
