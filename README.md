@@ -10,3 +10,11 @@ Possible edge cases
 - Memory / CPU intensive jobs
 
 To handle this, the server creates an isolated unique docker container to executes the code inside the container, allowing to isolate any disaster and limit memory usage or CPU usage. 
+
+
+# Getting started
+Initialize the environment:
+This command will build the base docker images that will be used to run the code.
+```sh
+npm run init-env
+```
