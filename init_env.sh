@@ -1,4 +1,5 @@
 #!/bin/sh
+
 DIR="$( cd "$( dirname "$0" )" && pwd )"
 
 # build python docker environment
