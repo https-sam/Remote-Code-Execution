@@ -14,16 +14,20 @@ describe("Python transform into executable", () => {
 
 
 describe("Python code excution test", () => {
-  let code: string
+  let fileJobs: Promise<any>[] = []
+  let codes: string[]
+  fileJobs.push(fs.promises.readFile(`${__dirname}/../test-code/python/counter.py`))
+  fileJobs.push(fs.promises.readFile(`${__dirname}/../test-code/python/helloWorld.py`))
   beforeAll((done) => {
-    fs.readFile(`${__dirname}/../test-code/python/counter.py`, 'utf8', (err, data) => {
-      code = data
+    Promise.all(fileJobs)
+    .then(outputs => {
+      codes = outputs
       done()
     })
   })
   it('should calculate a frequency in string', async () => {
     const codeContext: CodeContext = {
-      code: code,
+      code: codes[0],
       functionName: "calculate"
     }
     const worker = new JobWorker("python3", codeContext);
@@ -31,4 +35,14 @@ describe("Python code excution test", () => {
     expect(response.codeOutput).toBe("Counter({'a': 2, 's': 2, 'w': 2, 'e': 2, 'l': 1, 'd': 1, 'k': 1})")
     await worker.cleanupJob();
   })
+  it('should return string "Hello World"', async () => {
+    const codeContext: CodeContext = {
+      code: codes[1],
+      functionName: "run"
+    }
+    const worker = new JobWorker("python3", codeContext);
+    const response = await worker.startContainer()
+    expect(response.codeOutput).toBe("Hello World!")
+    await worker.cleanupJob();
+  });
 })
