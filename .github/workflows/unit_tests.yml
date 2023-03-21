@@ -14,7 +14,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Build Python Custom Docker image
+    - name: Build python code execution environment (DOCKER BUILD)
       run: docker build -t python3 -f ${{ github.workspace }}/dockerfiles/python3.Dockerfile .
     
     - name: Install testing dependencies
