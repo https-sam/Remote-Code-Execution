@@ -3,7 +3,8 @@
 		"start:dev": "npx nodemon",
 		"build": "rimraf ./build && tsc",
 		"test": "jest",
-    "ct": "rm ./temp/*"
+    "ct": "rm ./temp/*",
+		"init-env": "chmod 777 ./init_env.sh && ./init_env.sh"
 	},
 	"devDependencies": {
 		"@types/jest": "^29.5.0",
